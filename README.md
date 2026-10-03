@@ -1,3 +1,2 @@
 # PickupSports
-Ashton Reece
-Pranav Balaji
+Ashton Reece, Pranav Balaji
