@@ -206,6 +206,23 @@ DUMMY_GAMES_DB: List[GameSummary] = [
         rules="3v3 half court",
         status="open",
     ),
+
+    # Tommy Johnston Park (Live Google Places query match)
+    GameSummary(
+        game_id="gm_tommy_001",
+        court_id="live_tommy_johnston",
+        court_name="Tommy Johnston Neighborhood Park Basketball Court",
+        start_time="5:30 PM",
+        end_time="7:00 PM",
+        skill_level="Mid",
+        spots_available=4,
+        total_spots=10,
+        host_name="Chris D.",
+        host_show_up_rate=0.93,
+        host_rating=4.3,
+        rules="Half court 4v4",
+        status="open",
+    ),
 ]
 
 
@@ -221,32 +238,42 @@ def get_dummy_games_for_court(
 ) -> List[GameSummary]:
     """
     Retrieves scheduled games for a court by name matching.
+    Supports real Google Places names (e.g., 'France A. Córdova Recreational Sports Center')
+    and campus aliases.
     Optionally filters for games with open spots and/or specific skill levels.
     """
-    def clean(s: str) -> str:
-        return " ".join(s.lower().replace("-", " ").replace("basketball", "").replace("hall", "").split())
+    def facility_key(name: str) -> str:
+        s = name.lower().replace("-", " ")
+        if any(k in s for k in ("corec", "córdova", "cordova", "recreational sports center", "rec sports")):
+            return "corec"
+        if "pickett" in s:
+            return "pickett"
+        if "hillenbrand" in s:
+            return "hillenbrand"
+        if "blackbird" in s:
+            return "blackbird"
+        if "tommy johnston" in s or "johnston" in s:
+            return "tommy_johnston"
+        return s
 
-    q = clean(court_name)
+    q_raw = court_name.lower().replace("-", " ")
+    q_fac = facility_key(court_name)
     results = []
 
     for game in DUMMY_GAMES_DB:
-        c = clean(game.court_name)
+        c_raw = game.court_name.lower().replace("-", " ")
+        c_fac = facility_key(game.court_name)
 
-        # Distinguish specific courts (e.g., Court 2 vs Court 4)
-        if "court 2" in q and "court 2" not in c:
+        # Distinguish specific courts if specified (Court 2 vs Court 4)
+        if "court 2" in q_raw and "court 2" not in c_raw:
             continue
-        if "court 4" in q and "court 4" not in c:
+        if "court 4" in q_raw and "court 4" not in c_raw:
             continue
 
-        # Check for matching facility (corec, pickett, hillenbrand, blackbird)
         is_match = (
-            q == c
-            or q in c
-            or c in q
-            or ("corec" in q and "corec" in c and (("court 2" in q and "court 2" in c) or ("court 4" in q and "court 4" in c)))
-            or ("pickett" in q and "pickett" in c)
-            or ("hillenbrand" in q and "hillenbrand" in c)
-            or ("blackbird" in q and "blackbird" in c)
+            q_fac == c_fac
+            or q_raw in c_raw
+            or c_raw in q_raw
         )
 
         if not is_match:

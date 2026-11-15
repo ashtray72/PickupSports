@@ -27,7 +27,10 @@ from database.seeds.dummy_games import (
 # Constants
 EARTH_RADIUS_KM = 6371.0088
 KM_TO_MILES = 0.621371
-GOOGLE_PLACES_NEARBY_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+# Google Places API (New) Text Search endpoint
+GOOGLE_PLACES_NEW_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
+# Legacy Google Places Nearby Search endpoint (fallback)
+GOOGLE_PLACES_LEGACY_NEARBY_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
 
 
 def load_env_file() -> None:
@@ -89,43 +92,65 @@ def fetch_courts_from_google_places(
     api_key: str,
 ) -> Optional[List[Dict[str, Any]]]:
     """
-    Queries Google Places API Nearby Search for basketball courts.
+    Queries Google Places API (New) Text Search for basketball courts.
+    Endpoint: https://places.googleapis.com/v1/places:searchText
     Returns normalized court dicts, or None if the request failed.
     """
-    params = {
-        "location": f"{lat},{lon}",
-        "radius": radius_meters,
-        "keyword": "basketball court",
-        "key": api_key,
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": api_key,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location,places.currentOpeningHours",
     }
-    try:
-        response = requests.get(GOOGLE_PLACES_NEARBY_URL, params=params, timeout=5)
-        response.raise_for_status()
-        data = response.json()
+    payload = {
+        "textQuery": "basketball court",
+        "locationBias": {
+            "circle": {
+                "center": {"latitude": lat, "longitude": lon},
+                "radius": float(radius_meters),
+            }
+        },
+        "maxResultCount": 20,
+    }
 
-        status = data.get("status")
-        if status in ("OK", "ZERO_RESULTS"):
-            raw_places = data.get("results", [])
+    try:
+        response = requests.post(
+            GOOGLE_PLACES_NEW_TEXT_SEARCH_URL,
+            headers=headers,
+            json=payload,
+            timeout=5,
+        )
+        if response.status_code == 200:
+            data = response.json()
+            raw_places = data.get("places", [])
             normalized_courts = []
             for place in raw_places:
-                loc = place.get("geometry", {}).get("location", {})
+                loc = place.get("location", {})
+                display_name = place.get("displayName", {})
+                name = (
+                    display_name.get("text", "Basketball Court")
+                    if isinstance(display_name, dict)
+                    else str(display_name or "Basketball Court")
+                )
+                opening = place.get("currentOpeningHours", {})
+                open_now = opening.get("openNow", True) if isinstance(opening, dict) else True
+
                 normalized_courts.append({
-                    "place_id": place.get("place_id", ""),
-                    "name": place.get("name", "Basketball Court"),
-                    "latitude": loc.get("lat", 0.0),
-                    "longitude": loc.get("lng", 0.0),
-                    "address": place.get("vicinity", ""),
-                    "indoor": False,  # Default; indoor flags enriched via DB match
+                    "place_id": place.get("id", ""),
+                    "name": name,
+                    "latitude": loc.get("latitude", 0.0),
+                    "longitude": loc.get("longitude", 0.0),
+                    "address": place.get("formattedAddress", ""),
+                    "indoor": "indoor" in name.lower() or "corec" in name.lower(),
                     "hoop_count": 2,
-                    "surface": "Asphalt",
-                    "open_now": place.get("opening_hours", {}).get("open_now", True),
+                    "surface": "Hardwood" if ("indoor" in name.lower() or "corec" in name.lower()) else "Asphalt",
+                    "open_now": open_now,
                 })
             return normalized_courts
         else:
-            print(f"[DEBUG] Google Places API returned status: {status} - {data.get('error_message')}")
+            print(f"[DEBUG] Google Places API (New) returned HTTP {response.status_code}: {response.text}")
             return None
     except Exception as exc:
-        print(f"[DEBUG] Google Places API network request exception: {exc}")
+        print(f"[DEBUG] Google Places API (New) network request exception: {exc}")
         return None
 
 

@@ -39,6 +39,12 @@ class TestMappingSubsystem(unittest.TestCase):
         self.corec_lat = 40.4282
         self.corec_lon = -86.9222
         self.corec_coords = (self.corec_lat, self.corec_lon)
+        # Isolate unit tests from developer's local .env file
+        self.env_patcher = patch.dict(os.environ, {"GOOGLE_PLACES_API_KEY": ""})
+        self.env_patcher.start()
+
+    def tearDown(self):
+        self.env_patcher.stop()
 
     def test_haversine_distance_accuracy(self):
         """Tests that Haversine distance matches expected values between known landmarks."""
@@ -200,29 +206,29 @@ class TestMappingSubsystem(unittest.TestCase):
                 self.assertGreater(game.spots_available, 0)
                 self.assertTrue(game.is_looking_for_players)
 
-    @patch("requests.get")
-    def test_google_places_api_successful_response(self, mock_get):
-        """Mocks a successful Google Places API HTTP response and tests parsing."""
+    @patch("requests.post")
+    def test_google_places_api_successful_response(self, mock_post):
+        """Mocks a successful Google Places API (New) HTTP response and tests parsing."""
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            "status": "OK",
-            "results": [
+            "places": [
                 {
-                    "place_id": "google_place_mock_1",
-                    "name": "Live Google Court",
-                    "vicinity": "100 Stadium Way, West Lafayette, IN",
-                    "geometry": {
-                        "location": {
-                            "lat": 40.4290,
-                            "lng": -86.9230,
-                        }
+                    "id": "places/ChIJmock_12345",
+                    "displayName": {
+                        "text": "Live Google Court",
+                        "languageCode": "en",
                     },
-                    "opening_hours": {"open_now": True},
+                    "formattedAddress": "100 Stadium Way, West Lafayette, IN 47906",
+                    "location": {
+                        "latitude": 40.4290,
+                        "longitude": -86.9230,
+                    },
+                    "currentOpeningHours": {"openNow": True},
                 }
             ],
         }
-        mock_get.return_value = mock_response
+        mock_post.return_value = mock_response
 
         collection = get_nearby_courts_with_games(
             self.corec_coords,
@@ -234,12 +240,12 @@ class TestMappingSubsystem(unittest.TestCase):
         self.assertEqual(len(collection.features), 1)
         court = collection.features[0].properties
         self.assertEqual(court.name, "Live Google Court")
-        self.assertEqual(court.court_id, "google_place_mock_1")
+        self.assertEqual(court.court_id, "places/ChIJmock_12345")
 
-    @patch("requests.get")
-    def test_google_places_api_network_failure_fallback(self, mock_get):
-        """Mocks a Google Places API network timeout and verifies graceful fallback."""
-        mock_get.side_effect = requests.RequestException("Network connection failed")
+    @patch("requests.post")
+    def test_google_places_api_network_failure_fallback(self, mock_post):
+        """Mocks a Google Places API (New) network timeout and verifies graceful fallback."""
+        mock_post.side_effect = requests.RequestException("Network connection failed")
 
         captured_output = io.StringIO()
         with patch("sys.stdout", captured_output):
