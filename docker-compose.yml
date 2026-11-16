@@ -1,0 +1,31 @@
+# Local development services for PickupSports.
+#
+#   docker compose up -d db      # start PostgreSQL 17 + PostGIS 3.5
+#   docker compose down          # stop (data is kept in the pgdata volume)
+#   docker compose down -v       # stop and delete all local data
+#
+# Two databases are created on first start:
+#   pickup       - development data (seed with scripts/seed_database.py)
+#   pickup_test  - used by the pytest suite; tests reset it freely
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    container_name: pickupsports-db
+    environment:
+      POSTGRES_USER: pickup
+      POSTGRES_PASSWORD: pickup
+      POSTGRES_DB: pickup
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Runs after the image's own 10_postgis.sh on first start only.
+      - ./database/init.sql:/docker-entrypoint-initdb.d/20_pickupsports_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pickup -d pickup"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:

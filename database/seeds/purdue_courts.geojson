@@ -1,0 +1,67 @@
+{
+  "type": "FeatureCollection",
+  "name": "purdue_courts",
+  "_comment": "Seeded Purdue / West Lafayette courts (RFC 7946: coordinates are [longitude, latitude]). Source: MOCK_CAMPUS_COURTS in database/seeds/dummy_games.py. `seed_id` matches the court_id used by DUMMY_GAMES_DB.",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-86.9215, 40.4284] },
+      "properties": {
+        "seed_id": "mock_place_corec_c2",
+        "name": "Purdue CoRec - Court 2",
+        "address": "355 N Martin Jischke Dr, West Lafayette, IN 47906",
+        "indoor": true,
+        "hoop_count": 2,
+        "surface": "Hardwood"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-86.9212, 40.4286] },
+      "properties": {
+        "seed_id": "mock_place_corec_c4",
+        "name": "Purdue CoRec - Court 4",
+        "address": "355 N Martin Jischke Dr, West Lafayette, IN 47906",
+        "indoor": true,
+        "hoop_count": 2,
+        "surface": "Hardwood"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-86.9270, 40.4258] },
+      "properties": {
+        "seed_id": "mock_place_pickett_1",
+        "name": "Pickett Park Basketball Courts",
+        "address": "Stadium Ave & McCormick Rd, West Lafayette, IN 47906",
+        "indoor": false,
+        "hoop_count": 4,
+        "surface": "Asphalt"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-86.9238, 40.4262] },
+      "properties": {
+        "seed_id": "mock_place_hillenbrand",
+        "name": "Hillenbrand Hall Courts",
+        "address": "1301 Third Street, West Lafayette, IN 47906",
+        "indoor": false,
+        "hoop_count": 2,
+        "surface": "Asphalt"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-86.9312, 40.4435] },
+      "properties": {
+        "seed_id": "mock_place_blackbird",
+        "name": "Blackbird Farms Basketball Court",
+        "address": "2250 E Blackbird Dr, West Lafayette, IN 47906",
+        "indoor": false,
+        "hoop_count": 2,
+        "surface": "Asphalt"
+      }
+    }
+  ]
+}
