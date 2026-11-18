@@ -33,27 +33,7 @@ GOOGLE_PLACES_NEW_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:sea
 GOOGLE_PLACES_LEGACY_NEARBY_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
 
 
-def load_env_file() -> None:
-    """
-    Lightweight .env loader without third-party dependencies.
-    Reads KEY=VALUE pairs from .env in repository root into os.environ.
-    """
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-    env_path = os.path.join(repo_root, ".env")
-    if os.path.isfile(env_path):
-        try:
-            with open(env_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        k, v = line.split("=", 1)
-                        k = k.strip()
-                        v = v.strip().strip("'\"")
-                        if k and k not in os.environ:
-                            os.environ[k] = v
-        except Exception as exc:
-            print(f"[DEBUG] Failed reading .env file: {exc}")
-
+from server.app.core.config import load_env_file  # noqa: E402  (moved to core/config.py)
 
 # Load environment variables on module import
 load_env_file()
