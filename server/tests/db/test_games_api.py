@@ -16,6 +16,7 @@ import pytest
 import sqlalchemy as sa
 
 from server.app.api import deps
+from server.app.core.config import get_settings
 from server.app.crud import recommendations
 from server.app.main import app
 from server.app.models import Game, GameParticipant, ParticipantStatus, Visibility
@@ -26,13 +27,24 @@ LAT, LON = f.CENTER
 URL = "/api/v1/games/recommended"
 
 
+def _set_dev_auth(monkeypatch, enabled: bool) -> None:
+    if enabled:
+        monkeypatch.setenv("ALLOW_DEV_AUTH", "1")
+    else:
+        monkeypatch.delenv("ALLOW_DEV_AUTH", raising=False)
+    get_settings.cache_clear()
+
+
 @pytest.fixture
-async def api(committing):
+async def api(committing, monkeypatch):
+    _set_dev_auth(monkeypatch, True)
     app.dependency_overrides[deps.session_factory] = lambda: committing
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
     app.dependency_overrides.clear()
+    monkeypatch.undo()
+    get_settings.cache_clear()
 
 
 def as_user(user) -> dict[str, str]:
@@ -83,6 +95,25 @@ async def test_missing_user_header_is_401(api):
 async def test_unknown_user_is_401(api):
     response = await api.get(URL, params=feed_params(), headers={"X-Dev-User": "seed:nobody"})
     assert response.status_code == 401
+
+
+async def test_dev_user_header_is_refused_unless_dev_auth_is_enabled(api, committing, monkeypatch):
+    """NFR-05.1: with ALLOW_DEV_AUTH unset, even a real user's header gets 401."""
+    async with committing() as s, s.begin():
+        player = await f.user(s)
+        game = await f.game(s)
+    _set_dev_auth(monkeypatch, False)
+
+    feed = await api.get(URL, params=feed_params(), headers=as_user(player))
+    join = await api.post(f"/api/v1/games/{game.id}/join", headers=as_user(player))
+    assert feed.status_code == 401 and join.status_code == 401
+    assert "ALLOW_DEV_AUTH" in feed.json()["detail"]
+    async with committing() as s:
+        count = await s.scalar(sa.select(Game.participant_count).where(Game.id == game.id))
+    assert count == 1  # the refused join changed nothing
+
+    _set_dev_auth(monkeypatch, True)
+    assert (await api.get(URL, params=feed_params(), headers=as_user(player))).status_code == 200
 
 
 # --- recommended feed --------------------------------------------------------

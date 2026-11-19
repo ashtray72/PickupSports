@@ -78,9 +78,12 @@ python3 -m venv .venv && source .venv/bin/activate
 python -m pip install -r server/requirements.txt
 docker compose up -d db
 python -m alembic -c server/alembic.ini upgrade head
-python scripts/seed_database.py --date 2026-11-20   # pick a date with upcoming games
+python scripts/seed_database.py                    # demo games for today
+export ALLOW_DEV_AUTH=1                             # Windows PowerShell: $env:ALLOW_DEV_AUTH = "1"
 python -m uvicorn server.app.main:app --host 0.0.0.0 --port 8000
 ```
+
+The seed creates the demo games for today's date, and the feed only shows games that haven't ended yet. If it's late in the day, seed tomorrow instead with `--date YYYY-MM-DD`. Copying `.env.example` to `.env` also sets `ALLOW_DEV_AUTH=1`.
 
 Interactive API docs are at `http://localhost:8000/docs`. Endpoints:
 
@@ -89,14 +92,25 @@ Interactive API docs are at `http://localhost:8000/docs`. Endpoints:
 | GET | `/api/v1/games/recommended?lat=&lng=&radius_mi=&skill=&court_id=` | Games the player may join, best match first (FR-04, FR-12) |
 | POST | `/api/v1/games/{game_id}/join` | Join a game; `409` when it is full (FR-05) |
 
-Requests identify the player with an `X-Dev-User` header holding a Firebase UID. The seed creates `seed:demo-player` (rating 4.0). This header is a prototype stand-in for Firebase ID tokens.
+Requests identify the player with an `X-Dev-User` header holding a Firebase UID. The seed creates `seed:demo-player` (rating 4.0). This header is a prototype stand-in for Firebase ID tokens, so the API only accepts it when `ALLOW_DEV_AUTH=1` is set; otherwise every request gets `401`. Never set it on a deployed server.
 
 To point the app at the API, start Expo with your computer's Wi-Fi IP address:
+
+macOS (zsh):
 
 ```sh
 cd client
 EXPO_PUBLIC_API_URL=http://<your-ip>:8000 npm start
 ```
+
+Windows (PowerShell):
+
+```powershell
+cd client
+$env:EXPO_PUBLIC_API_URL = "http://<your-ip>:8000"; npm start
+```
+
+Find your IP with `ipconfig getifaddr en0` (macOS) or `ipconfig` (Windows, the "IPv4 Address" of your Wi-Fi adapter).
 
 The feed header then says "Live games, best match first". If the server can't be reached, the app falls back to the demo games and says so. Ranking details are in `docs/prototype_docs/matching_subsystem_walkthrough.md`.
 

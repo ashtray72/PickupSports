@@ -94,14 +94,19 @@ async def recommended_games(
     skill: Optional[str] = None,
     court_id: Optional[uuid.UUID] = None,
     now: Optional[datetime] = None,
+    player: Optional[MatchPlayer] = None,
 ) -> list[RecommendedGame]:
-    """Games the player may see near `near`, best match first."""
+    """
+    Games the player may see near `near`, best match first. Pass `player` if the
+    caller already loaded it (saves a query); otherwise it is looked up here.
+    """
     settings = get_settings()
     now = utc_now(now)
     if radius_m is None:
         radius_m = settings.match_default_radius_m
 
-    player = await match_player(session, user_id)
+    if player is None:
+        player = await match_player(session, user_id)
     visible = await list_visible_games(session, user_id, near=near, radius_m=radius_m, now=now, court_id=court_id)
     visible = filter_by_skill_chip(visible, skill)
 

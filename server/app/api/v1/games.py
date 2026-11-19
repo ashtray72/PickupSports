@@ -54,6 +54,7 @@ async def get_recommended_games(
         radius_m=radius_m,
         skill=skill,
         court_id=court_id,
+        player=player,
     )
     games = []
     for item in results:

@@ -50,6 +50,11 @@ class Settings:
     database_url: str
     test_database_url: str
 
+    # Prototype sign-in (server/app/api/deps.py): trust an `X-Dev-User` header as the
+    # player's identity. Anyone can claim to be anyone with it, so it is OFF unless
+    # ALLOW_DEV_AUTH=1 is set (local development only, never on a deployed server).
+    allow_dev_auth: bool = False
+
     # SYS-06: organizers below this reliability score cannot create public games,
     # once they have at least `reliability_min_events` attendance events.
     reliability_threshold: float = 0.70
@@ -99,4 +104,5 @@ def get_settings() -> Settings:
     return Settings(
         database_url=os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL),
         test_database_url=os.environ.get("TEST_DATABASE_URL", DEFAULT_TEST_DATABASE_URL),
+        allow_dev_auth=os.environ.get("ALLOW_DEV_AUTH", "").strip() == "1",
     )

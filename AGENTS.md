@@ -104,7 +104,16 @@ Files: `server/app/services/matching.py` (pure ranking), `server/app/crud/recomm
 `server/app/main.py`, `server/app/api/`, `server/app/schemas/game.py`, `client/src/api/games.ts`,
 `server/tests/test_matching.py`, `server/tests/db/test_games_api.py`.
 Design: `docs/prototype_docs/matching_subsystem_walkthrough.md`.
+Start the API (`ALLOW_DEV_AUTH=1` is required for the prototype sign-in; `.env` from `.env.example` sets it):
+
+**Windows (PowerShell)**
+```powershell
+$env:ALLOW_DEV_AUTH = "1"
+python -m uvicorn server.app.main:app --reload --host 0.0.0.0 --port 8000   # docs at /docs
+```
+**macOS (zsh)**
 ```bash
+export ALLOW_DEV_AUTH=1
 python -m uvicorn server.app.main:app --reload --host 0.0.0.0 --port 8000   # docs at /docs
 ```
 - Eligibility (FR-04) stays in `crud.games.list_visible_games`. The ranker only orders and drops
@@ -113,8 +122,10 @@ python -m uvicorn server.app.main:app --reload --host 0.0.0.0 --port 8000   # do
 - `rank_games` must stay deterministic (ties: start time, distance, game id). Tests depend on it.
 - Routes that write call `session.commit()` before returning. Domain errors map to HTTP codes in
   `main.py` (`GameFullError` -> 409, `NotPermittedError` -> 403, `NotFoundError` -> 404).
-- `X-Dev-User` auth in `api/deps.py` is a prototype stand-in. Replace it with Firebase token
-  verification (FR-01.1 / NFR-05.1); don't build features that rely on it.
+- `X-Dev-User` auth in `api/deps.py` is a prototype stand-in, accepted only when `ALLOW_DEV_AUTH=1`
+  (off by default, so a deployed server rejects it with 401). Replace it with Firebase token
+  verification (FR-01.1 / NFR-05.1); don't build features that rely on it, and never enable it outside
+  local development. API tests turn it on in their `api` fixture.
 - API tests use the `committing` fixture because the app opens its own sessions.
 
 ## Database subsystem (owner: Donovan)
