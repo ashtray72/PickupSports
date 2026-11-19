@@ -8,7 +8,7 @@ The current frontend is a React Native/Expo demo of nearby basketball games. It 
 
 ## Run the frontend
 
-Use Node.js 24.3 or newer within the Node 24 release line, with npm. Check `node --version` before installing. The app uses Expo SDK 57, React Native 0.86.3, and React 19.2.3. From the repository root:
+Use Node.js 24.3 or newer within the Node 24 release line, with npm. Check `node --version` before installing. The app uses Expo SDK 58, React Native 0.88.1, and React 19.3.0. From the repository root:
 
 ```sh
 cd client
@@ -26,7 +26,7 @@ npm --version
 
 This does not change shell startup files or the system-wide Node configuration. The project lockfile records the installed dependency versions; use `npm ci` to reproduce them.
 
-Open the project in a compatible version of Expo Go on an iPhone connected to the same Wi-Fi network as the development computer. Expo Go must support the Expo SDK used by this project.
+Open the project in a compatible version of Expo Go on an iPhone connected to the same Wi-Fi network as the development computer. Expo Go must support the Expo SDK used by this project. The App Store only offers the latest Expo Go, which supports one SDK at a time; if Expo Go says the project is incompatible, the project's SDK needs upgrading (`npx expo install expo@^<sdk>.0.0`, then `npx expo install --fix`).
 
 For the iOS Simulator on macOS, install and configure Xcode and its iOS Simulator, then run this command from `client`:
 
