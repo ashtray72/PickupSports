@@ -28,6 +28,15 @@ This does not change shell startup files or the system-wide Node configuration. 
 
 Open the project in a compatible version of Expo Go on an iPhone connected to the same Wi-Fi network as the development computer. Expo Go must support the Expo SDK used by this project. The App Store only offers the latest Expo Go, which supports one SDK at a time; if Expo Go says the project is incompatible, the project's SDK needs upgrading (`npx expo install expo@^<sdk>.0.0`, then `npx expo install --fix`).
 
+Expo Go requires you to be signed in to the same Expo account on the computer and on the phone. If it says "You need to be signed in to Expo Go and Expo CLI to open your project", create a free account at https://expo.dev/signup (one per person), then sign in on the computer from `client`:
+
+```sh
+npx expo login
+npx expo whoami   # prints your Expo username when signed in
+```
+
+In the Expo Go app, sign in with the same account on its Profile screen, then run `npm start` again and scan the QR code. If the phone can't reach the computer (common on campus Wi-Fi such as eduroam), start with `npx expo start --tunnel` instead. The login is stored on your machine, not in the repository.
+
 For the iOS Simulator on macOS, install and configure Xcode and its iOS Simulator, then run this command from `client`:
 
 ```sh
