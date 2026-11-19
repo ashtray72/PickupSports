@@ -77,6 +77,22 @@ class Settings:
     raw_video_retention: timedelta = timedelta(days=14)
     tag_lock_period: timedelta = timedelta(days=14)
 
+    # FR-12 / SYS-12: game ranking (server/app/services/matching.py).
+    # Score = skill * skill fit + distance * distance score + start * start time score.
+    # These are starting values from the design trade study; retune from logged joins.
+    match_weight_skill: float = 0.5
+    match_weight_distance: float = 0.3
+    match_weight_start: float = 0.2
+    # Provisional players' ratings are rough, so skill fit counts this much less.
+    match_provisional_skill_factor: float = 0.5
+    # Only games starting within this window are ranked.
+    match_window: timedelta = timedelta(days=7)
+    # Skill ranges narrower than this (in rating points) are treated as this wide,
+    # so a 4.0-4.0 range does not divide by zero.
+    match_min_skill_width: float = 1.0
+    # Default search radius for the recommended feed (5 miles).
+    match_default_radius_m: float = 8046.7
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
