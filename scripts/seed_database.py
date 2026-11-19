@@ -65,6 +65,8 @@ SKILL_RANGES = {
     "All": (None, None),
 }
 FILLER_PLAYERS = 12
+DEMO_PLAYER_SLUG = "demo-player"
+DEMO_PLAYER_RATING = 4.0
 
 
 @dataclass
@@ -161,6 +163,10 @@ async def seed(session: AsyncSession, day: Optional[date] = None) -> SeedSummary
         await _seed_user(session, summary, f"player-{i:02d}", f"Seed Player {i:02d}", rating_display=3.5)
         for i in range(1, FILLER_PLAYERS + 1)
     ]
+
+    # The player the app signs in as during the prototype demo (X-Dev-User:
+    # seed:demo-player). Not on any roster, so every join in the demo is real.
+    await _seed_user(session, summary, DEMO_PLAYER_SLUG, "Demo Player", rating_display=DEMO_PLAYER_RATING)
 
     # Games
     for g in DUMMY_GAMES_DB:

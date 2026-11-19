@@ -50,6 +50,11 @@ class Settings:
     database_url: str
     test_database_url: str
 
+    # Prototype sign-in (server/app/api/deps.py): trust an `X-Dev-User` header as the
+    # player's identity. Anyone can claim to be anyone with it, so it is OFF unless
+    # ALLOW_DEV_AUTH=1 is set (local development only, never on a deployed server).
+    allow_dev_auth: bool = False
+
     # SYS-06: organizers below this reliability score cannot create public games,
     # once they have at least `reliability_min_events` attendance events.
     reliability_threshold: float = 0.70
@@ -77,10 +82,27 @@ class Settings:
     raw_video_retention: timedelta = timedelta(days=14)
     tag_lock_period: timedelta = timedelta(days=14)
 
+    # FR-12 / SYS-12: game ranking (server/app/services/matching.py).
+    # Score = skill * skill fit + distance * distance score + start * start time score.
+    # These are starting values from the design trade study; retune from logged joins.
+    match_weight_skill: float = 0.5
+    match_weight_distance: float = 0.3
+    match_weight_start: float = 0.2
+    # Provisional players' ratings are rough, so skill fit counts this much less.
+    match_provisional_skill_factor: float = 0.5
+    # Only games starting within this window are ranked.
+    match_window: timedelta = timedelta(days=7)
+    # Skill ranges narrower than this (in rating points) are treated as this wide,
+    # so a 4.0-4.0 range does not divide by zero.
+    match_min_skill_width: float = 1.0
+    # Default search radius for the recommended feed (5 miles).
+    match_default_radius_m: float = 8046.7
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings(
         database_url=os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL),
         test_database_url=os.environ.get("TEST_DATABASE_URL", DEFAULT_TEST_DATABASE_URL),
+        allow_dev_auth=os.environ.get("ALLOW_DEV_AUTH", "").strip() == "1",
     )

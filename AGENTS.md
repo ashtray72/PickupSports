@@ -12,8 +12,8 @@ PickupSports (Purdue ECE 49595, Team 10) is an iOS app for pickup basketball: fi
 games on a court map, record a game with one phone, and get per-player stats from a CV pipeline.
 
 - Planned stack: React Native (iOS) client, FastAPI backend, PostgreSQL + PostGIS, Celery/Redis GPU worker.
-- **Exists today:** `server/` (mapping service, database layer), `database/` (seeds), `scripts/`.
-  `client/` and `cv_pipeline/` are not created yet.
+- **Exists today:** `server/` (FastAPI app, mapping service, database layer, matching),
+  `client/` (Expo nearby-games screen), `database/` (seeds), `scripts/`. `cv_pipeline/` is not created yet.
 - Requirements use IDs: TOP-xx, SYS-xx, FR-xx, NFR-xx (see `docs/semester1/`). Reference them in
   code comments, test docstrings and PRs.
 - Deeper docs: `docs/semester1/dev_process.md` (process), `docs/prototype_docs/*_walkthrough.md` (subsystems).
@@ -98,6 +98,35 @@ python scripts/run_court_mapping_demo.py --lat 40.4258 --lon -86.9270 --format j
 - **Current state:** games still come from in-memory `dummy_games.py`, not the database. The planned
   next step is to read from `crud.courts.nearby_courts()` and `crud.games.list_visible_games()`, which
   already return every `GameSummary` field. Database courts link to Places via `courts.google_place_id`.
+
+## Matching subsystem and games API (owner: Soham)
+Files: `server/app/services/matching.py` (pure ranking), `server/app/crud/recommendations.py` (feed glue),
+`server/app/main.py`, `server/app/api/`, `server/app/schemas/game.py`, `client/src/api/games.ts`,
+`server/tests/test_matching.py`, `server/tests/db/test_games_api.py`.
+Design: `docs/prototype_docs/matching_subsystem_walkthrough.md`.
+Start the API (`ALLOW_DEV_AUTH=1` is required for the prototype sign-in; `.env` from `.env.example` sets it):
+
+**Windows (PowerShell)**
+```powershell
+$env:ALLOW_DEV_AUTH = "1"
+python -m uvicorn server.app.main:app --reload --host 0.0.0.0 --port 8000   # docs at /docs
+```
+**macOS (zsh)**
+```bash
+export ALLOW_DEV_AUTH=1
+python -m uvicorn server.app.main:app --reload --host 0.0.0.0 --port 8000   # docs at /docs
+```
+- Eligibility (FR-04) stays in `crud.games.list_visible_games`. The ranker only orders and drops
+  games past the 7-day window; it must never add a game back.
+- Ranking weights live in `core/config.py` (`match_*`). Change them there, not in `matching.py`.
+- `rank_games` must stay deterministic (ties: start time, distance, game id). Tests depend on it.
+- Routes that write call `session.commit()` before returning. Domain errors map to HTTP codes in
+  `main.py` (`GameFullError` -> 409, `NotPermittedError` -> 403, `NotFoundError` -> 404).
+- `X-Dev-User` auth in `api/deps.py` is a prototype stand-in, accepted only when `ALLOW_DEV_AUTH=1`
+  (off by default, so a deployed server rejects it with 401). Replace it with Firebase token
+  verification (FR-01.1 / NFR-05.1); don't build features that rely on it, and never enable it outside
+  local development. API tests turn it on in their `api` fixture.
+- API tests use the `committing` fixture because the app opens its own sessions.
 
 ## Database subsystem (owner: Donovan)
 Files: `server/app/models/` (tables), `server/alembic/versions/` (migrations), `server/app/crud/`

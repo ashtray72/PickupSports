@@ -36,6 +36,7 @@
   },
   "jest": {
     "preset": "jest-expo",
+    "testTimeout": 15000,
     "watchman": false
   },
   "prettier": {
